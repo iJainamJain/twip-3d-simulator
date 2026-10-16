@@ -137,7 +137,27 @@
     #hudBox.hud-collapsed #hudBody { display: none; }
     .rail-btn-game.active { color: #fbbf24; background: rgba(251, 191, 36, 0.12); }
     .rail-btn-game.active::before { background: #fbbf24; }
-    @media (max-width: 639px) { #minimapWrap { display: none !important; } }
+    /* --- Touch screens --- */
+    html { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    body { -webkit-touch-callout: none; }
+    body.h-screen { height: 100vh; height: 100dvh; } /* exclude mobile browser bars */
+    #threeCanvas, #joystickPad { touch-action: none; }
+    #gameHud span { white-space: nowrap; }
+    @media (pointer: coarse) {
+      #joystickPad { width: 112px; height: 112px; }
+      #joystickKnob { width: 48px; height: 48px; }
+      #railKeyHint { display: none; }
+    }
+    /* Phones (portrait or landscape): compact overlays; during a run keep only the game HUD, stick and minimap */
+    @media (max-width: 639px), (max-height: 500px) {
+      #explodedControl, #joystickInfo { display: none; }
+      #minimapWrap { right: 12px; bottom: 12px; padding: 4px; }
+      #minimapCanvas { width: 104px !important; height: 104px !important; }
+      #gameHud { font-size: 11px; gap: 8px; padding: 4px 8px; }
+      body.game-active #liveAlertPill,
+      body.game-active #hudBox,
+      body.game-active #viewControls { display: none; }
+    }
     #hudBox.hud-collapsed #hudChevron { transform: rotate(180deg); }
     /* Phones: the status badge shrinks to a dot that keeps its green/amber/red state colour */
     @media (max-width: 639px) {
@@ -221,7 +241,7 @@
         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/></svg>
         <span>Game</span>
       </button>
-      <div class="mt-auto text-[9px] font-mono-tech text-slate-600 text-center leading-tight pb-1">[ &nbsp;]<br>panels</div>
+      <div id="railKeyHint" class="mt-auto text-[9px] font-mono-tech text-slate-600 text-center leading-tight pb-1">[ &nbsp;]<br>panels</div>
     </nav>
 
     <!-- LEFT PANEL: ACTIVE CONTROL SECTION -->
@@ -730,6 +750,7 @@
               <div class="text-xs font-semibold text-slate-200">How to play</div>
               <ul class="space-y-1 text-slate-300 list-disc pl-4 leading-snug">
                 <li>Drive with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / arrow keys or the drive stick; the chase cam follows you.</li>
+                <li>On a phone or tablet: steer with the stick under your left thumb, drag the view with another finger to look around, pinch to zoom.</li>
                 <li>Follow the amber light beam, the arrow at the top of the view and the minimap.</li>
                 <li>Each fall adds <b class="text-rose-300">+3 s</b>. Self-Right stands you back up; Reset Pose respawns at the last checkpoint.</li>
                 <li>Hitting walls or boulders at speed can knock the robot over.</li>
@@ -803,7 +824,7 @@
         </div>
 
         <!-- CAMERA & VIEW CONTROLS -->
-        <div class="pointer-events-auto ml-auto flex flex-col gap-1.5 items-end">
+        <div id="viewControls" class="pointer-events-auto ml-auto flex flex-col gap-1.5 items-end">
           <div class="glass-panel rounded-lg p-1.5 flex flex-wrap gap-1">
             <button id="camFollowBtn" class="px-2 py-1 rounded text-[11px] font-medium bg-sky-500/20 text-sky-300 border border-sky-500/40">
               Follow Cam
@@ -822,7 +843,7 @@
             </button>
           </div>
 
-          <div class="glass-panel rounded-lg px-2.5 py-1.5 flex items-center gap-2 text-xs">
+          <div id="explodedControl" class="glass-panel rounded-lg px-2.5 py-1.5 flex items-center gap-2 text-xs">
             <label for="explodedSlider" class="text-[11px] text-slate-300 font-medium">Exploded CAD:</label>
             <input id="explodedSlider" type="range" min="0" max="100" value="0" class="w-20" />
             <span id="explodedVal" class="font-mono-tech text-[11px] text-sky-400 w-8 text-right">0%</span>
@@ -857,7 +878,7 @@
               <div class="absolute inset-2 rounded-full border border-dashed border-slate-700/70 pointer-events-none"></div>
               <div id="joystickKnob" class="w-7 h-7 rounded-full bg-sky-400/90 border-2 border-white shadow-lg pointer-events-none transition-transform duration-75"></div>
             </div>
-            <div class="text-[11px] space-y-0.5">
+            <div id="joystickInfo" class="text-[11px] space-y-0.5">
               <div class="font-semibold text-slate-200">Drive Stick / WASD</div>
               <div class="text-slate-400 font-mono-tech" id="joystickReadout">Thr: 0% | Turn: 0%</div>
               <div class="flex gap-1 pt-0.5">
@@ -1211,7 +1232,9 @@
       const viewportContainer = document.getElementById('viewportContainer');
       const canvas3d = document.getElementById('threeCanvas');
       const renderer = new THREE.WebGLRenderer({ canvas: canvas3d, antialias: true });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+      // Phones and tablets: slightly lower resolution keeps the frame rate up
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isTouchDevice ? 1.5 : 2));
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -2875,7 +2898,7 @@
         Object.assign(layout, JSON.parse(localStorage.getItem(LAYOUT_KEY) || '{}'));
       } catch (e) { /* storage unavailable: use defaults */ }
       if (narrowQuery.matches) { layout.left = false; layout.right = false; }
-      if (window.matchMedia('(max-width: 639px)').matches && !('hudUserSet' in layout)) layout.hud = false;
+      if (window.matchMedia('(max-width: 639px), (max-height: 500px)').matches && !('hudUserSet' in layout)) layout.hud = false;
       if (!tabIds.includes(layout.section)) layout.section = 'Drive';
 
       const statusBadgeEl = document.getElementById('statusBadge');
@@ -3951,17 +3974,45 @@ void loop() {
       // --- 3D VIEWPORT ORBIT & RAYCAST CLICK ---
       const raycaster = new THREE.Raycaster();
       const pointerNDC = new THREE.Vector2();
-      let pointerDownPos = { x: 0, y: 0 };
+      // Pointers on the 3D view: one drags the orbit, two pinch-zoom, a short tap inspects a part.
+      // Each pointer is tracked by id so a thumb on the drive stick never moves the camera.
+      const viewPointers = new Map();
+      let tapCandidate = null;
+      let pinchStartGap = 0;
+      let pinchStartDistance = 0;
+
+      function pointerGap() {
+        const [a, b] = [...viewPointers.values()];
+        return Math.hypot(a.x - b.x, a.y - b.y);
+      }
 
       canvas3d.addEventListener('pointerdown', (e) => {
-        camOrbit.isDragging = true;
-        camOrbit.lastX = e.clientX;
-        camOrbit.lastY = e.clientY;
-        pointerDownPos = { x: e.clientX, y: e.clientY };
+        canvas3d.setPointerCapture(e.pointerId);
+        viewPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (viewPointers.size === 1) {
+          camOrbit.isDragging = true;
+          camOrbit.lastX = e.clientX;
+          camOrbit.lastY = e.clientY;
+          tapCandidate = { id: e.pointerId, x: e.clientX, y: e.clientY };
+        } else if (viewPointers.size === 2) {
+          tapCandidate = null;
+          pinchStartGap = pointerGap();
+          pinchStartDistance = camOrbit.distance;
+        }
       });
 
-      window.addEventListener('pointermove', (e) => {
-        if (!camOrbit.isDragging) return;
+      canvas3d.addEventListener('pointermove', (e) => {
+        const p = viewPointers.get(e.pointerId);
+        if (!p) return;
+        p.x = e.clientX;
+        p.y = e.clientY;
+        if (viewPointers.size >= 2) {
+          const gap = pointerGap();
+          if (pinchStartGap > 0 && gap > 0) {
+            camOrbit.distance = Math.max(0.42, Math.min(9.0, pinchStartDistance * (pinchStartGap / gap)));
+          }
+          return;
+        }
         const dx = e.clientX - camOrbit.lastX;
         const dy = e.clientY - camOrbit.lastY;
         camOrbit.lastX = e.clientX;
@@ -3970,22 +4021,33 @@ void loop() {
         camOrbit.pitch = Math.max(0.08, Math.min(1.48, camOrbit.pitch + dy * 0.007));
       });
 
-      window.addEventListener('pointerup', (e) => {
-        if (camOrbit.isDragging) {
-          const moveDist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
-          if (moveDist < 6) {
-            const rect = canvas3d.getBoundingClientRect();
-            pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-            pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-            raycaster.setFromCamera(pointerNDC, camera);
-            const hits = raycaster.intersectObjects(selectableMeshes, false);
-            if (hits.length > 0 && hits[0].object.userData.partId) {
-              inspectHardwarePart(hits[0].object.userData.partId);
-            }
+      function endViewPointer(e) {
+        if (!viewPointers.has(e.pointerId)) return;
+        viewPointers.delete(e.pointerId);
+        const tapSlop = e.pointerType === 'touch' ? 10 : 6;
+        if (e.type === 'pointerup' && tapCandidate && tapCandidate.id === e.pointerId &&
+            Math.hypot(e.clientX - tapCandidate.x, e.clientY - tapCandidate.y) < tapSlop) {
+          const rect = canvas3d.getBoundingClientRect();
+          pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+          pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+          raycaster.setFromCamera(pointerNDC, camera);
+          const hits = raycaster.intersectObjects(selectableMeshes, false);
+          if (hits.length > 0 && hits[0].object.userData.partId) {
+            inspectHardwarePart(hits[0].object.userData.partId);
           }
         }
-        camOrbit.isDragging = false;
-      });
+        if (viewPointers.size === 1) {
+          // Lifting one finger of a pinch: keep orbiting with the other without a jump
+          const rest = [...viewPointers.values()][0];
+          camOrbit.lastX = rest.x;
+          camOrbit.lastY = rest.y;
+        }
+        if (viewPointers.size < 2) pinchStartGap = 0;
+        tapCandidate = viewPointers.size === 0 ? null : tapCandidate;
+        camOrbit.isDragging = viewPointers.size > 0;
+      }
+      canvas3d.addEventListener('pointerup', endViewPointer);
+      canvas3d.addEventListener('pointercancel', endViewPointer);
 
       canvas3d.addEventListener('wheel', (e) => {
         e.preventDefault();
@@ -4233,6 +4295,7 @@ void loop() {
         gameGroup.visible = on;
         gameUi.hud.classList.toggle('hidden', !on);
         gameUi.minimapWrap.classList.toggle('hidden', !on);
+        document.body.classList.toggle('game-active', on);
         if (!on) gameUi.overlay.classList.add('hidden');
       }
 

@@ -12,3 +12,7 @@ A browser-based 3D digital twin of a two-wheeled self-balancing robot (ESP32 + M
 Controls: WASD / arrow keys or the on-screen stick, `[` `]` toggle panels, `1`-`6` switch sections.
 
 Works offline too: download this repository and open `index.html`.
+
+Project Contributor 
+Jainam Jain
+Vivek Jaiswal 

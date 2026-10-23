@@ -16,3 +16,5 @@ Works offline too: download this repository and open `index.html`.
 Project Contributor 
 Jainam Jain
 Vivek Jaiswal 
+Shreya Vekhande
+Akshata Nalawade

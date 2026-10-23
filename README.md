@@ -13,8 +13,8 @@ Controls: WASD / arrow keys or the on-screen stick, `[` `]` toggle panels, `1`-`
 
 Works offline too: download this repository and open `index.html`.
 
-Project Contributor: 
--Jainam Jain
--Vivek Jaiswal 
--Shreya Vekhande
--Akshata Nalawade
+Project Contributors: 
+- Jainam Jain
+- Vivek Jaiswal 
+- Shreya Vekhande
+- Akshata Nalawade
